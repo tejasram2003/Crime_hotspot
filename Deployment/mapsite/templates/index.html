@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+      #map {
+          height: 400px;
+          width: 100%;
+      }
+      #progress-bar {
+          width: 100%;
+          height: 30px;
+          background-color: #f3f3f3;
+          position: relative;
+          border: 1px solid #000;
+      }
+      #progress {
+          height: 100%;
+          width: 0;
+          background-color: #4CAF50;
+          position: absolute;
+      }
+      #progress-label {
+          position: absolute;
+          width: 100%;
+          text-align: center;
+          font-weight: bold;
+      }
+  </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="coordinates"></div>
+    <div id="progress-bar">
+      <div id="progress"></div>
+      <span id="progress-label">0%</span>
+  </div>
+
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([41.85003,-87.65005], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Add a draggable marker
+        var marker = L.marker([41.85003,-87.65005], {draggable: true}).addTo(map);
+
+        // Update latitude and longitude in real time
+        marker.on('drag', function(e) {
+            var lat = e.target.getLatLng().lat;
+            var lng = e.target.getLatLng().lng;
+            updateProgress(lat, lng);
+        });
+
+        function updateProgress(latitude, longitude) {
+      console.log('Updating progress for lat:', latitude, 'lng:', longitude);
+      $.ajax({
+        url: 'update_marker_coordinates',
+        type: 'POST',
+        data: {
+            'latitude': latitude,
+            'longitude': longitude,
+            'csrfmiddlewaretoken': $('input[name="csrfmiddlewaretoken"]').val()  // Get the CSRF token value
+        },
+        
+        success: function(response) {
+            console.log('Response:', response);
+            if (response.status === 'success') {
+                var progress = response.progress;
+                $('#progress').css('width', progress + '%');
+                $('#progress-label').text(progress.toFixed(2) + '%');
+                
+            }
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            console.log('Error updating progress:', textStatus, errorThrown);
+        }
+    });
+}
+
+    </script>
+    <h3>Danger Level</h3>
+</body>
+</html>
